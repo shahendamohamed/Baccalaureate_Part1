@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>درس 1.3 :الذكاء الاصطناعي في الحياة اليومية والصناعة</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #06b6d4;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .quiz-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(6, 182, 212, 0.15);
+            padding: 25px;
+            width: 100%;
+            max-width: 650px;
+            position: relative;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        h2 {
+            color: var(--secondary);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            min-height: 55px;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background-color: #334155;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 14px;
+            color: var(--text);
+            font-size: 15px;
+            cursor: pointer;
+            text-align: right;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: #475569;
+            border-color: var(--secondary);
+        }
+
+        .option-btn.correct {
+            background-color: var(--success) !important;
+            box-shadow: 0 0 12px var(--success);
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .option-btn.wrong {
+            background-color: var(--danger) !important;
+            box-shadow: 0 0 12px var(--danger);
+        }
+
+        .stars-overlay {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 50px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        @keyframes popStars {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+
+            50% {
+                transform: translate(-50%, -70%) scale(1.4);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -90%) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .animate-stars {
+            animation: popStars 0.8s ease-out forwards;
+        }
+
+        .footer-info {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .result-screen {
+            text-align: center;
+            display: none;
+        }
+
+        .score-big {
+            font-size: 48px;
+            color: var(--secondary);
+            font-weight: bold;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="quiz-card">
+        <div id="stars" class="stars-overlay">✨🌟✨</div>
+
+        <div id="quiz-box">
+            <h2> درس 1.3 </h2>
+            <h2>🏆 الذكاء الاصطناعي في الحياة اليومية والصناعة </h2>
+            <div class="question-text" id="q-text">جاري تحميل السؤال...</div>
+            <div class="options-list" id="options-container"></div>
+            <div class="footer-info">
+                <span>السؤال: <span id="q-current">1</span> / 5</span>
+                <span>النقاط: <span id="score-live">0</span></span>
+            </div>
+        </div>
+
+        <div id="result-box" class="result-screen">
+            <h2>🎉 تم إنهاء التحدي ! 🎉</h2>
+            <p>درجتك النهائية هي:</p>
+            <div class="score-big"><span id="score-final">0</span> / 5</div>
+            <p id="feedback-msg" style="color: #94a3b8; margin-bottom: 20px; white-space: pre-line;"></p>
+            <button class="option-btn" style="text-align:center; width:100%;" onclick="restartQuiz()">تحدي جديد بأسئلة
+                مختلفة 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // بنك الأسئلة الشامل (15 سؤال)
+        const allQuestionsPool = [
+            {
+                q: "ما وظيفة نظام التوصية؟",
+                options: [
+                    "ترجمة النصوص بين اللغات",
+                    "التنبؤ بتفضيلات المستخدم وعرض اقتراحات مناسبة",
+                    "تصنيع أجهزة الحاسوب",
+                    "تخزين الملفات فقط"
+                ],
+                correct: 1
+            },
+            {
+                q: "أي من المنصات التالية تستخدم أنظمة التوصية؟",
+                options: [
+                    "يوتيوب وأمازون وسبوتيفاي",
+                    "برنامج المفكرة فقط",
+                    "الآلة الحاسبة",
+                    "برنامج الرسام"
+                ],
+                correct: 0
+            },
+            {
+                q: "ما وظيفة المساعد الصوتي مثل Siri ومساعد جوجل؟",
+                options: [
+                    "التعرف على الصوت وفهم الأوامر وتنفيذها",
+                    "اكتشاف أعطال السيارات فقط",
+                    "ترجمة الصور إلى ألوان",
+                    "تصنيع الأجهزة الإلكترونية"
+                ],
+                correct: 0
+            },
+            {
+                q: "ما المقصود بالترجمة الآلية؟",
+                options: [
+                    "ترجمة النصوص يدويًا بواسطة الإنسان",
+                    "ترجمة النصوص تلقائيًا إلى لغات مختلفة",
+                    "تحليل الصور الطبية",
+                    "التعرف على وجوه الأشخاص"
+                ],
+                correct: 1
+            },
+            {
+                q: "ما الاستخدام الأساسي لتقنية التعرف على الوجه؟",
+                options: [
+                    "تحسين مسارات التوصيل",
+                    "التنبؤ بموعد الحصاد",
+                    "الكشف عن وجوه الأشخاص في الصور والتعرف عليها",
+                    "ترجمة النصوص"
+                ],
+                correct: 2
+            },
+            {
+                q: "في أي صناعة يُستخدم الذكاء الاصطناعي لتحليل صور الأشعة السينية؟",
+                options: [
+                    "الزراعة",
+                    "الرعاية الصحية",
+                    "الخدمات اللوجستية",
+                    "التصنيع"
+                ],
+                correct: 1
+            },
+            {
+                q: "كيف يُستخدم الذكاء الاصطناعي في الزراعة؟",
+                options: [
+                    "التنبؤ بموعد الحصاد والكشف عن الآفات والأمراض",
+                    "ترجمة النصوص",
+                    "التعرف على وجوه المستخدمين",
+                    "اقتراح مقاطع الفيديو"
+                ],
+                correct: 0
+            },
+            {
+                q: "ما المقصود بالصيانة التنبؤية في التصنيع؟",
+                options: [
+                    "إصلاح الآلات بعد توقفها فقط",
+                    "التنبؤ بأعطال الآلات أو المعدات قبل وقوعها",
+                    "زيادة عدد العاملين",
+                    "ترجمة تعليمات تشغيل الآلات"
+                ],
+                correct: 1
+            },
+            {
+                q: "كيف يساعد الذكاء الاصطناعي قطاع الخدمات اللوجستية؟",
+                options: [
+                    "تحسين مسارات التوصيل",
+                    "تشخيص الأمراض",
+                    "التعرف على الأصوات",
+                    "توليد الصور الطبية فقط"
+                ],
+                correct: 0
+            },
+            {
+                q: "ما إحدى المهارات التي يبرع فيها الذكاء الاصطناعي؟",
+                options: [
+                    "اتخاذ جميع القرارات الأخلاقية",
+                    "إيجاد وتصنيف الأنماط في البيانات المعقدة",
+                    "تحمل المسؤولية القانونية",
+                    "ضمان صحة جميع المعلومات"
+                ],
+                correct: 1
+            },
+            {
+                q: "أي مما يلي يُعد من قدرات الذكاء الاصطناعي؟",
+                options: [
+                    "التعرف على الصور والأصوات والنصوص",
+                    "ضمان عدم حدوث الأخطاء",
+                    "اتخاذ القرارات الأخلاقية دائمًا",
+                    "حماية الخصوصية تلقائيًا في جميع الحالات"
+                ],
+                correct: 0
+            },
+            {
+                q: "ماذا يعني الاستدلال الاحتمالي في الذكاء الاصطناعي؟",
+                options: [
+                    "اتخاذ قرارات عشوائية دون بيانات",
+                    "التنبؤ اعتمادًا على البيانات والاحتمالات",
+                    "تخزين المعلومات فقط",
+                    "إيقاف الأنظمة عند وجود بيانات"
+                ],
+                correct: 1
+            },
+            {
+                q: "ما المقصود بمشكلة الصندوق الأسود؟",
+                options: [
+                    "عدم القدرة على تخزين البيانات",
+                    "عدم وضوح كيفية توصل الذكاء الاصطناعي إلى حكمه",
+                    "وجود عطل في شاشة الحاسوب",
+                    "فقدان الاتصال بالإنترنت"
+                ],
+                correct: 1
+            },
+            {
+                q: "ما المقصود بالهلوسة في الذكاء الاصطناعي؟",
+                options: [
+                    "توليد معلومات غير صحيحة أو غير مدعومة تبدو مقنعة",
+                    "التعرف على الصور بدقة",
+                    "تحسين جودة البيانات",
+                    "حماية المعلومات الشخصية"
+                ],
+                correct: 0
+            },
+            {
+                q: "لماذا نحتاج إلى الإشراف البشري عند استخدام الذكاء الاصطناعي؟",
+                options: [
+                    "لأنه لا يستطيع معالجة البيانات",
+                    "لضمان عدم استخدام التكنولوجيا",
+                    "للتحقق من النتائج ومراعاة الأخلاق والخصوصية والمسؤولية",
+                    "لأن جميع نتائجه خاطئة"
+                ],
+                correct: 2
+            }
+        ];
+
+        let activeQuestions = [];
+        let currentIdx = 0;
+        let currentScore = 0;
+
+        const qText = document.getElementById('q-text');
+        const optionsContainer = document.getElementById('options-container');
+        const qCurrent = document.getElementById('q-current');
+        const scoreLive = document.getElementById('score-live');
+        const stars = document.getElementById('stars');
+        const quizBox = document.getElementById('quiz-box');
+        const resultBox = document.getElementById('result-box');
+        const scoreFinal = document.getElementById('score-final');
+        const feedbackMsg = document.getElementById('feedback-msg');
+
+        // دالة لاختيار 5 أسئلة عشوائية فريدة من نوعها في كل دورة
+        function prepareRandomQuestions() {
+            // خلط مصفوفة الأسئلة الأصلية بشكل عشوائي كامل
+            const shuffled = [...allQuestionsPool].sort(() => 0.5 - Math.random());
+            // قطع أول 5 أسئلة فقط للاختبار الحالي
+            activeQuestions = shuffled.slice(0, 5);
+        }
+
+        function renderQuestion() {
+            const item = activeQuestions[currentIdx];
+            qText.innerText = `${currentIdx + 1}. ${item.q}`;
+            qCurrent.innerText = currentIdx + 1;
+            scoreLive.innerText = currentScore;
+            optionsContainer.innerHTML = '';
+
+            item.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.classList.add('option-btn');
+                btn.innerText = opt;
+                btn.onclick = () => selectOption(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+        function selectOption(selectedIndex, btnElement) {
+            const correctIndex = activeQuestions[currentIdx].correct;
+            const allBtns = optionsContainer.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.disabled = true);
+            if (selectedIndex === correctIndex) {
+                btnElement.classList.add('correct');
+                currentScore++;
+                scoreLive.innerText = currentScore;
+                stars.classList.add('animate-stars');
+                setTimeout(() => stars.classList.remove('animate-stars'), 800);
+            } else {
+                btnElement.classList.add('wrong');
+                allBtns[correctIndex].classList.add('correct');
+            }
+            setTimeout(() => {
+                currentIdx++;
+                if (currentIdx < activeQuestions.length) {
+                    renderQuestion();
+                } else {
+                    showResults();
+                }
+            }, 1500);
+        }
+        function showResults() {
+            quizBox.style.display = 'none';
+            resultBox.style.display = 'block';
+            scoreFinal.innerText = currentScore;
+            if (currentScore === 5) {
+                feedbackMsg.innerText = "👑 سكور ممتاز وعلامة كاملة! 👑\nلقد أتقنتِ الإجابة على جميع الأسئلة الموجهة لكِ، مستوى مبهر!";
+            } else if (currentScore >= 3) {
+                feedbackMsg.innerText = "🌟 نتيجة رائعة! 🌟\nمستواكِ مستقر وقوي جداً. جربي اللعب مرة أخرى لتجربة أسئلة جديدة وتثبيت الإتقان.";
+            } else {
+                feedbackMsg.innerText = "📚 فرصة ممتازة للمحاولة مجدداً 📚\nالأسئلة العشوائية تقيس دقة الفهم الشامل، اضغطي على زر التحدي الجديد لتجربة مجموعة أسئلة أخرى وتحسين درجاتكِ!";
+            }
+        }
+        function restartQuiz() {
+            currentIdx = 0;
+            currentScore = 0;
+            resultBox.style.display = 'none';
+            quizBox.style.display = 'block';
+            prepareRandomQuestions();
+            renderQuestion();
+        }
+        // بدء تشغيل اللعبة وتوليد الأسئلة العشوائية فور التحميل لأول مرة
+        window.onload = function () {
+            prepareRandomQuestions();
+            renderQuestion();
+        };
+    </script>
